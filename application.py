@@ -19,7 +19,8 @@ import requests
 from flask import make_response
 app = Flask(__name__)
 
-CLIENT_ID = json.loads(open('client_secrets.json', 'r').read())['web']['client_id']
+CLIENT_ID = json.loads(
+    open('client_secrets.json', 'r').read())['web']['client_id']
 APPLICATION_NAME = 'Music Catalog app'
 
 engine = create_engine('sqlite:///musiccatalog.db')
@@ -63,7 +64,8 @@ def gconnect():
         oauth_flow.redirect_uri = 'postmessage'
         credentials = oauth_flow.step2_exchange(code)
     except FlowExchangeError:
-        response = make_response(json.dumps('Failed to upgrade the authorization code.'), 401)
+        response = make_response(json.dumps('''Failed to upgrade
+                                            the authorization code.'''), 401)
         response.headers['Content-Type'] = 'application/json'
         return response
 
@@ -88,7 +90,8 @@ def gconnect():
     gplus_id = credentials.id_token['sub']
     if result['user_id'] != gplus_id:
         response = \
-            make_response(json.dumps("Token's user ID doesn't match given user ID."), 401)
+            make_response(json.dumps('''Token's user ID
+                                    doesn't match given user ID.'''), 401)
         response.headers['Content-Type'] = 'application/json'
         return response
 
@@ -96,7 +99,8 @@ def gconnect():
 
     if result['issued_to'] != CLIENT_ID:
         response = \
-            make_response(json.dumps("Token's client ID does not match app's."), 401)
+            make_response(json.dumps('''Token's client ID
+                                        does not match app's.'''), 401)
         print "Token's client ID does not match app's."
         response.headers['Content-Type'] = 'application/json'
         return response
@@ -104,7 +108,8 @@ def gconnect():
     stored_access_token = login_session.get('access_token')
     stored_gplus_id = login_session.get('gplus_id')
     if stored_access_token is not None and gplus_id == stored_gplus_id:
-        response = make_response(json.dumps('Current user is already connected.'), 200)
+        response = make_response(json.dumps('''Current user
+                                            is already connected.'''), 200)
         response.headers['Content-Type'] = 'application/json'
         return response
 
@@ -136,8 +141,9 @@ def gconnect():
     output += '!</h1>'
     output += '<img src="'
     output += login_session['picture']
-    output += \
-        ' " style = "width: 300px; height: 300px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
+    output += ' " style = "width: 300px; height: 300px;' \
+        'border-radius: 150px;-webkit-border-radius: 150px;' \
+        '-moz-border-radius: 150px;"> '
     flash('you are now logged in as %s' % login_session['username'])
     print 'done!'
     return output
@@ -172,7 +178,8 @@ def gdisconnect():
         response.headers['Content-Type'] = 'application/json'
         return redirect(url_for('showCategories'))
     else:
-        response = make_response(json.dumps('Failed to revoke token for given user.', 400))
+        response = make_response(json.dumps('''Failed to revoke
+                                            token for given user.''', 400))
         response.headers['Content-Type'] = 'application/json'
         return response
 
@@ -253,7 +260,7 @@ def editCategory(category_id):
     if 'username' not in login_session:
         return redirect('/login')
     if categoryToEdit.user_id != login_session['user_id']:
-        return "<script>function myFunction() {alert('You are not authorized to edit this category. Please create your own category in order to edit.');}</script><body onload='myFunction()''>"
+        return "You are not authorized to edit this category"
     if request.method == 'POST':
         if request.form['name']:
             categoryToEdit.name = request.form['name']
@@ -272,7 +279,7 @@ def deleteCategory(category_id):
     if 'username' not in login_session:
         return redirect('/login')
     if categoryToDelete.user_id != login_session['user_id']:
-        return "<script>function myFunction() {alert('You are not authorized to delete this category. Please create your own category in order to delete.');}</script><body onload='myFunction()''>"
+        return 'You are not authorized to delete this category.'
     if request.method == 'POST':
         session.delete(categoryToDelete)
         session.commit()
@@ -289,7 +296,8 @@ def showProducts(category_id):
     products = \
         session.query(Product).filter_by(category_id=category_id).all()
     creator = getUserInfo(category.user_id)
-    if 'username' not in login_session or creator.id != login_session['user_id']:
+    if ('username' not in login_session or
+            creator.id != login_session['user_id']):
         return render_template('publicproducts.html',
                                category=category, products=products)
     else:
@@ -297,13 +305,14 @@ def showProducts(category_id):
                                products=products)
 
 
-@app.route('/categories/<int:category_id>/products/new/', methods=['GET', 'POST'])
+@app.route(
+    '/categories/<int:category_id>/products/new/', methods=['GET', 'POST'])
 def newProduct(category_id):
     if 'username' not in login_session:
         return redirect('/login')
     category = session.query(Category).filter_by(id=category_id).one()
     if category.user_id != login_session['user_id']:
-        return "<script>function myFunction() {alert('You are not authorized to create a new product. Please create your own category in order to create a product.');}</script><body onload='myFunction()''>"
+        return 'You are not authorized to create a new product.'
     if request.method == 'POST':
         newProduct = Product(name=request.form['name'],
                              description=request.form['description'],
@@ -319,14 +328,16 @@ def newProduct(category_id):
         return render_template('newproduct.html')
 
 
-@app.route('/categories/<int:category_id>/products/<int:product_id>/edit/', methods=['GET', 'POST'])
+@app.route(
+    '/categories/<int:category_id>/products/<int:product_id>/edit/',
+    methods=['GET', 'POST'])
 def editProduct(category_id, product_id):
     category = session.query(Category).filter_by(id=category_id).one()
     product = session.query(Product).filter_by(id=product_id).one()
     if 'username' not in login_session:
         return redirect('/login')
     if category.user_id != login_session['user_id']:
-        return "<script>function myFunction() {alert('You are not authorized to edit this product. Please create your own category in order to edit a product.');}</script><body onload='myFunction()''>"
+        return 'You are not authorized to edit this product.'
     if request.method == 'POST':
         if request.form['name']:
             product.name = request.form['name']
@@ -345,14 +356,16 @@ def editProduct(category_id, product_id):
                                product_id=product_id, product=product)
 
 
-@app.route('/categories/<int:category_id>/products/<int:product_id>/delete/', methods=['GET', 'POST'])
+@app.route(
+    '/categories/<int:category_id>/products/<int:product_id>/delete/',
+    methods=['GET', 'POST'])
 def deleteProduct(category_id, product_id):
     category = session.query(Category).filter_by(id=category_id).one()
     product = session.query(Product).filter_by(id=product_id).one()
     if 'username' not in login_session:
         return redirect('/login')
     if category.user_id != login_session['user_id']:
-        return "<script>function myFunction() {alert('You are not authorized to delete this product. Please create your own category in order to delete a product.');}</script><body onload='myFunction()''>"
+        return 'You are not authorized to delete this product.'
     if request.method == 'POST':
         session.delete(product)
         session.commit()
