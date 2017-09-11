@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <link rel=stylesheet type=text/css href="{{ url_for('static', filename='styles.css') }}">
+        <title>Music Catalog</title>
+    </head>
+    <body>
+        <div class="container">
+            <header>
+                <h1> Music Catalog </h1>
+                <div class="login">
+                        {%if 'username' not in session %}
+                    <a href="{{url_for('showLogin')}}">Click Here to Login </a>
+                    {% else %}
+                    <a href="{{url_for('gdisconnect')}}">Logout </a>
+                    {% endif %}
+                </div>
+            </header>
+
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+
+            <ul>
+            {% for message in messages %}
+                <li> <strong> {{ message }} </strong> </li>
+            {% endfor %}
+            </ul>
+            {% endif %}
+            {% endwith %}
+
+            {% for category in categories %}
+            <a href="{{url_for('showProducts', category_id = category.id)}}"><p>{{category.name}}</p></a>
+            <br>
+            {% endfor %}
+        </div>
+    </body>
+</html>
